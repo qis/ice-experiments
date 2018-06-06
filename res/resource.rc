@@ -1,0 +1,34 @@
+#include <config.h>
+#include <windows.h>
+
+101 ICON "resource.ico"
+
+VS_VERSION_INFO VERSIONINFO
+  PRODUCTVERSION  VERSION_MAJOR, VERSION_MINOR
+  FILEVERSION     VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, 0
+  FILEOS          VOS_NT_WINDOWS32
+  FILETYPE        VFT_APP
+  FILESUBTYPE     VFT2_UNKNOWN
+  FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+  FILEFLAGS       VS_FF_DEBUG
+#else
+  FILEFLAGS       0
+#endif
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "000004B0"
+    BEGIN
+      VALUE "FileDescription",  "DEUS Server"
+      VALUE "ProductName",      "DEUS"
+      VALUE "CompanyName",      "Xiphos"
+      VALUE "LegalCopyright",   "2018 Alexej Harm"
+      VALUE "ProductVersion",   VERSION
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0, 0x04B0
+  END
+END

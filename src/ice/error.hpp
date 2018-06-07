@@ -4,6 +4,14 @@
 #include <type_traits>
 #include <cassert>
 
+#ifndef ICE_HAS_EXCEPTIONS
+#if (defined(_MSC_VER) && _HAS_EXCEPTIONS) || !defined(_MSC_VER) && __cpp_exceptions
+#define ICE_HAS_EXCEPTIONS 1
+#else
+#define ICE_HAS_EXCEPTIONS 0
+#endif
+#endif
+
 namespace ice {
 
 enum class errc : int {

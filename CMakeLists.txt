@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.11.3 FATAL_ERROR)
 project(ice VERSION 0.1.0 LANGUAGES CXX)
 
+option(BUILD_APPLICATION "Build application" OFF)
+option(BUILD_BENCHMARK "Build benchmark" OFF)
+option(BUILD_TESTS "Build tests" OFF)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -83,8 +87,6 @@ install(EXPORT ice FILE ice-targets.cmake NAMESPACE ice:: DESTINATION lib/cmake/
 
 add_library(ice::ice ALIAS ice)
 
-option(BUILD_APPLICATION "Build application" OFF)
-
 if(BUILD_APPLICATION)
   file(GLOB src src/*.hpp src/*.cpp)
   source_group("" FILES ${src})
@@ -93,37 +95,30 @@ if(BUILD_APPLICATION)
     source_group("res" FILES ${res})
     list(APPEND src ${res})
   endif()
-
   add_executable(main ${src})
   target_link_libraries(main PRIVATE ice::ice)
-  set_target_properties(main PROPERTIES OUTPUT_NAME ice)
+  set_target_properties(main PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
   set_target_properties(main PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT main)
   install(TARGETS main RUNTIME DESTINATION bin)
 endif()
 
-find_package(benchmark)
-option(BUILD_BENCHMARK "Build benchmark" ${benchmark_FOUND})
-
 if(BUILD_BENCHMARK)
   file(GLOB src src/benchmark/*.hpp src/benchmark/*.cpp)
   source_group("" FILES ${src})
-
   add_executable(benchmark ${src})
+  find_package(benchmark REQUIRED)
   target_link_libraries(benchmark PRIVATE benchmark::benchmark ice::ice)
   set_target_properties(benchmark PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
-
-find_package(GTest)
-option(BUILD_TESTS "Build tests" ${GTEST_FOUND})
 
 if(BUILD_TESTS)
   enable_testing()
   include(GoogleTest)
   file(GLOB src src/tests/*.hpp src/tests/*.cpp)
   source_group("" FILES ${src})
-
   add_executable(tests ${src})
+  find_package(GTest REQUIRED)
   target_link_libraries(tests PRIVATE GTest::GTest GTest::Main ice::ice)
   gtest_add_tests(TARGET tests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()

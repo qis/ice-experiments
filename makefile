@@ -53,6 +53,9 @@ format:
 	@$(FORMAT) -i $(SOURCES)
 
 clean:
-	@rm -rf build/llvm bin lib
+	@rm -rf build/llvm
 
-.PHONY: all run dbg test bench install debug release format clean
+uninstall:
+	@rm -rf bin include lib
+
+.PHONY: all run dbg test bench install debug release format clean uninstall

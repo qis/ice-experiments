@@ -127,3 +127,21 @@ if(BUILD_TESTS)
   target_link_libraries(tests PRIVATE GTest::GTest GTest::Main ice::ice)
   gtest_add_tests(TARGET tests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
+
+#if(WIN32 AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tzdata/windowsZones.xml)
+#  file(DOWNLOAD "https://unicode.org/repos/cldr/trunk/common/supplemental/windowsZones.xml"
+#    ${CMAKE_CURRENT_SOURCE_DIR}/tzdata/windowsZones.xml)
+#endif()
+#if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tzdata/version)
+#  if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/tzdata/tzdata.tar.gz)
+#    file(DOWNLOAD "https://data.iana.org/time-zones/releases/tzdata2018e.tar.gz"
+#      ${CMAKE_CURRENT_BINARY_DIR}/tzdata/tzdata.tar.gz)
+#  endif()
+#  execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf tzdata.tar.gz
+#    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tzdata)
+#  foreach(name africa antarctica asia australasia backward etcetera
+#      europe leapseconds northamerica pacificnew southamerica systemv version)
+#    file(COPY ${CMAKE_CURRENT_BINARY_DIR}/tzdata/${name} DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/tzdata)
+#  endforeach()
+#endif()
+#install(DIRECTORY tzdata DESTINATION bin)

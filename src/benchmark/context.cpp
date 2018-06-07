@@ -9,7 +9,7 @@ static void context_schedule(benchmark::State& state) noexcept
   ice::context c1;
   auto t0 = std::thread([&]() { c0.run(); });
   auto t1 = std::thread([&]() { c1.run(); });
-  [&](ice::context& c0, ice::context& c1) noexcept -> ice::task {
+  [&](ice::context& c0, ice::context& c1) -> ice::task {
     bool first = true;
     for (auto _ : state) {
       if (first) {

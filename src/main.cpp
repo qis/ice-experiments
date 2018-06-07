@@ -11,9 +11,8 @@ class result {};
 
 int main(int argc, char* argv[])
 {
-  []() noexcept -> ice::task {
-    //co_await test();
-    ice::log("test");
+  []() -> ice::task {
+    co_await test();
     co_return;
   }();
 }

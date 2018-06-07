@@ -41,7 +41,7 @@ build/llvm/debug/CMakeCache.txt: CMakeLists.txt build/llvm/debug
 	@cd build/llvm/debug && CC=$(CC) CXX=$(CXX) cmake -GNinja -DCMAKE_BUILD_TYPE=Debug $(CONFIG) $(PWD)
 
 build/llvm/release/CMakeCache.txt: CMakeLists.txt build/llvm/release
-	@cd build/llvm/release && CC=$(CC) CXX=$(CXX) cmake -GNinja -DCMAKE_BUILD_TYPE=Release $(CONFIG) $(PWD)
+	@cd build/llvm/release && CC=$(CC) CXX=$(CXX) cmake -GNinja -DCMAKE_BUILD_TYPE=MinSizeRel $(CONFIG) $(PWD)
 
 build/llvm/debug:
 	@mkdir -p build/llvm/debug

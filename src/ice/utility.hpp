@@ -24,7 +24,8 @@ public:
 
   class lock {
   public:
-    lock(handle_type handle, value_type value) noexcept : handle_(handle) {
+    lock(handle_type handle, value_type value) noexcept : handle_(handle)
+    {
 #ifdef WIN32
       [[maybe_unused]] const auto rc = ::TlsSetValue(handle_, value);
       assert(rc);
@@ -34,20 +35,23 @@ public:
 #endif
     }
 
-    lock(lock&& other) : handle_(other.handle_) {
+    lock(lock&& other) : handle_(other.handle_)
+    {
       other.handle_ = invalid_handle_value;
     }
 
     lock(const lock& other) = delete;
 
-    lock& operator=(lock&& other) {
+    lock& operator=(lock&& other)
+    {
       lock{ std::move(other) }.swap(*this);
       return *this;
     }
 
     lock& operator=(const lock& other) = delete;
 
-    ~lock() {
+    ~lock()
+    {
       if (handle_ != invalid_handle_value) {
 #ifdef WIN32
         [[maybe_unused]] const auto rc = ::TlsSetValue(handle_, nullptr);
@@ -59,7 +63,8 @@ public:
       }
     }
 
-    constexpr void swap(lock& other) noexcept {
+    constexpr void swap(lock& other) noexcept
+    {
       const auto handle = other.handle_;
       other.handle_ = handle_;
       handle_ = handle;
@@ -69,7 +74,8 @@ public:
     handle_type handle_ = 0;
   };
 
-  thread_local_storage() noexcept {
+  thread_local_storage() noexcept
+  {
 #ifdef WIN32
     handle_ = ::TlsAlloc();
 #else
@@ -79,20 +85,23 @@ public:
     assert(handle_ != invalid_handle_value);
   }
 
-  thread_local_storage(thread_local_storage&& other) : handle_(other.handle_) {
+  thread_local_storage(thread_local_storage&& other) : handle_(other.handle_)
+  {
     other.handle_ = invalid_handle_value;
   }
 
   thread_local_storage(const thread_local_storage& other) = delete;
 
-  thread_local_storage& operator=(thread_local_storage&& other) {
+  thread_local_storage& operator=(thread_local_storage&& other)
+  {
     thread_local_storage{ std::move(other) }.swap(*this);
     return *this;
   }
 
   thread_local_storage& operator=(const thread_local_storage& other) = delete;
 
-  ~thread_local_storage() {
+  ~thread_local_storage()
+  {
     if (handle_ != invalid_handle_value) {
 #ifdef WIN32
       [[maybe_unused]] const auto rc = ::TlsFree(handle_);
@@ -104,17 +113,20 @@ public:
     }
   }
 
-  constexpr void swap(thread_local_storage& other) noexcept {
+  constexpr void swap(thread_local_storage& other) noexcept
+  {
     const auto handle = other.handle_;
     other.handle_ = handle_;
     handle_ = handle;
   }
 
-  lock set(const value_type value) noexcept {
+  lock set(const value_type value) noexcept
+  {
     return { handle_, value };
   }
 
-  value_type get() noexcept {
+  value_type get() noexcept
+  {
 #ifdef WIN32
     return reinterpret_cast<value_type>(::TlsGetValue(handle_));
 #else
@@ -122,7 +134,8 @@ public:
 #endif
   }
 
-  const value_type get() const noexcept {
+  const value_type get() const noexcept
+  {
 #ifdef WIN32
     return reinterpret_cast<const value_type>(::TlsGetValue(handle_));
 #else

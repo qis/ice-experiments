@@ -28,7 +28,8 @@ public:
 
   virtual ~event() = default;
 
-  void resume() noexcept {
+  void resume() noexcept
+  {
     awaiter_.resume();
   }
 
@@ -42,7 +43,8 @@ private:
 
 class context {
 public:
-  void run() noexcept {
+  void run() noexcept
+  {
     const auto index = index_.set(this);
     std::unique_lock<std::mutex> lock{ mutex_ };
     lock.unlock();
@@ -66,16 +68,19 @@ public:
     }
   }
 
-  bool is_current() const noexcept {
+  bool is_current() const noexcept
+  {
     return index_.get() ? true : false;
   }
 
-  void stop() noexcept {
+  void stop() noexcept
+  {
     stop_.store(true, std::memory_order_release);
     cv_.notify_all();
   }
 
-  void post(event* ev) noexcept {
+  void post(event* ev) noexcept
+  {
     auto head = head_.load(std::memory_order_acquire);
     do {
       ev->next_.store(head, std::memory_order_relaxed);
@@ -95,11 +100,13 @@ class schedule final : public event {
 public:
   schedule(context& context, bool post = false) noexcept : context_(context), ready_(!post && context.is_current()) {}
 
-  constexpr bool await_ready() const noexcept {
+  constexpr bool await_ready() const noexcept
+  {
     return ready_;
   }
 
-  void await_suspend(std::experimental::coroutine_handle<> awaiter) noexcept {
+  void await_suspend(std::experimental::coroutine_handle<> awaiter) noexcept
+  {
     awaiter_ = awaiter;
     context_.post(this);
   }

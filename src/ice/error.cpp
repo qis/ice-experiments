@@ -15,11 +15,13 @@ namespace detail {
 
 class native_category : public std::error_category {
 public:
-  const char* name() const noexcept override {
+  const char* name() const noexcept override
+  {
     return "native";
   }
 
-  std::string message(int code) const override {
+  std::string message(int code) const override
+  {
 #ifdef WIN32
     std::wstring wstr;
     constexpr DWORD type = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
@@ -58,7 +60,8 @@ public:
 #endif
   }
 
-  static std::string format(std::string str) {
+  static std::string format(std::string str)
+  {
     if (const auto pos = str.find_first_not_of("\r\n "); pos != std::string::npos) {
       str.erase(0, pos);
     }
@@ -82,11 +85,13 @@ public:
 
 class system_category : public std::error_category {
 public:
-  const char* name() const noexcept override {
+  const char* name() const noexcept override
+  {
     return "system";
   }
 
-  std::string message(int code) const override {
+  std::string message(int code) const override
+  {
     const auto value = static_cast<std::errc>(code);
     if (value == std::errc::address_family_not_supported) {
       return "address family not supported";
@@ -328,11 +333,13 @@ public:
 
 class domain_category : public std::error_category {
 public:
-  const char* name() const noexcept override {
+  const char* name() const noexcept override
+  {
     return "domain";
   }
 
-  std::string message(int code) const override {
+  std::string message(int code) const override
+  {
     switch (static_cast<ice::errc>(code)) {
     case ice::errc::eof: return "end of file";
     case ice::errc::version: return "version mismatch";
@@ -345,7 +352,8 @@ const native_category g_native_category;
 const system_category g_system_category;
 const domain_category g_domain_category;
 
-void timestamp(FILE* handle) {
+void timestamp(FILE* handle)
+{
   const auto st = std::chrono::floor<std::chrono::milliseconds>(std::chrono::system_clock::now());
   const auto sd = std::chrono::floor<date::days>(st);
   const auto ymd = date::year_month_day{ sd };
@@ -360,38 +368,45 @@ void timestamp(FILE* handle) {
   std::fprintf(handle, "%04d-%02u-%02u %02d:%02d:%02d.%03d", yr, mo, dy, hr, mi, se, ms);
 }
 
-std::mutex& mutex() {
+std::mutex& mutex()
+{
   static std::mutex mutex;
   return mutex;
 }
 
 }  // namespace detail
 
-const std::error_category& native_category() {
+const std::error_category& native_category()
+{
   return detail::g_native_category;
 }
 
-const std::error_category& system_category() {
+const std::error_category& system_category()
+{
   return detail::g_system_category;
 }
 
-const std::error_category& domain_category() {
+const std::error_category& domain_category()
+{
   return detail::g_domain_category;
 }
 
-void log(ice::error_code ec) noexcept {
+void log(ice::error_code ec) noexcept
+{
   const std::lock_guard<std::mutex> lock{ detail::mutex() };
   detail::timestamp(stdout);
   std::fprintf(stdout, " [%s] %s (%d)\n", ec.category().name(), ec.message().data(), ec.value());
 }
 
-void err(ice::error_code ec) noexcept {
+void err(ice::error_code ec) noexcept
+{
   const std::lock_guard<std::mutex> lock{ detail::mutex() };
   detail::timestamp(stderr);
   std::fprintf(stderr, " [%s] %s (%d)\n", ec.category().name(), ec.message().data(), ec.value());
 }
 
-void log(ice::error_code ec, const char* message, ...) noexcept {
+void log(ice::error_code ec, const char* message, ...) noexcept
+{
   assert(message);
   const std::lock_guard<std::mutex> lock{ detail::mutex() };
   detail::timestamp(stdout);
@@ -403,7 +418,8 @@ void log(ice::error_code ec, const char* message, ...) noexcept {
   std::fprintf(stdout, ": %s (%d)\n", ec.message().data(), ec.value());
 }
 
-void err(ice::error_code ec, const char* message, ...) noexcept {
+void err(ice::error_code ec, const char* message, ...) noexcept
+{
   assert(message);
   const std::lock_guard<std::mutex> lock{ detail::mutex() };
   detail::timestamp(stderr);
@@ -415,7 +431,8 @@ void err(ice::error_code ec, const char* message, ...) noexcept {
   std::fprintf(stderr, ": %s (%d)\n", ec.message().data(), ec.value());
 }
 
-void log(const char* message, ...) noexcept {
+void log(const char* message, ...) noexcept
+{
   assert(message);
   const std::lock_guard<std::mutex> lock{ detail::mutex() };
   detail::timestamp(stdout);
@@ -427,7 +444,8 @@ void log(const char* message, ...) noexcept {
   std::fprintf(stdout, "\n");
 }
 
-void err(const char* message, ...) noexcept {
+void err(const char* message, ...) noexcept
+{
   assert(message);
   const std::lock_guard<std::mutex> lock{ detail::mutex() };
   detail::timestamp(stdout);

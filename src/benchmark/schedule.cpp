@@ -3,7 +3,8 @@
 #include <ice/context.hpp>
 #include <thread>
 
-static ice::task coro(ice::context& c0, ice::context& c1, benchmark::State& state) noexcept {
+static ice::task coro(ice::context& c0, ice::context& c1, benchmark::State& state) noexcept
+{
   bool first = true;
   for (auto _ : state) {
     if (first) {
@@ -18,7 +19,8 @@ static ice::task coro(ice::context& c0, ice::context& c1, benchmark::State& stat
   co_return;
 }
 
-static void schedule(benchmark::State& state) noexcept {
+static void schedule(benchmark::State& state) noexcept
+{
   ice::context c0;
   ice::context c1;
   auto t0 = std::thread([&]() { c0.run(); });

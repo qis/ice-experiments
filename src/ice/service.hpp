@@ -21,7 +21,8 @@ namespace detail {
 #ifdef WIN32
 
 struct wsa {
-  wsa() {
+  wsa()
+  {
     WSADATA wsadata = {};
     if (const auto rc = ::WSAStartup(MAKEWORD(2, 2), &wsadata)) {
       ec = rc;
@@ -44,7 +45,8 @@ class service {
 public:
   service() noexcept = default;
 
-  ice::error_code create() noexcept {
+  ice::error_code create() noexcept
+  {
 #ifdef WIN32
     static const detail::wsa wsa;
     if (wsa.ec) {

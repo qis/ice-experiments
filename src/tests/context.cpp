@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
-#include <ice/coro.hpp>
 #include <ice/context.hpp>
+#include <ice/coro.hpp>
+#include <gtest/gtest.h>
 #include <thread>
 
 TEST(context, schedule)

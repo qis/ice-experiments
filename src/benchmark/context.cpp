@@ -1,6 +1,6 @@
-#include <benchmark/benchmark.h>
-#include <ice/coro.hpp>
 #include <ice/context.hpp>
+#include <ice/coro.hpp>
+#include <benchmark/benchmark.h>
 #include <thread>
 
 static void context_schedule(benchmark::State& state) noexcept

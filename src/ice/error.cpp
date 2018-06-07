@@ -1,4 +1,4 @@
-#include <ice/error.hpp>
+#include "error.hpp"
 #include <date/date.h>
 #include <algorithm>
 #include <mutex>
@@ -6,8 +6,8 @@
 #include <cstdio>
 
 #ifdef WIN32
-#include <windows.h>
 #include <wchar.h>
+#include <windows.h>
 #endif
 
 namespace ice {

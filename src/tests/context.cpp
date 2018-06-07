@@ -9,7 +9,7 @@ TEST(context, schedule)
   ice::context c1;
   auto t0 = std::thread([&]() { c0.run(); });
   auto t1 = std::thread([&]() { c1.run(); });
-  [&](ice::context& c0, ice::context& c1) -> ice::task {
+  [&](ice::context& c0, ice::context& c1) noexcept -> ice::task {
     co_await ice::schedule(c0, true);
     EXPECT_EQ(std::this_thread::get_id(), t0.get_id());
     co_await ice::schedule(c1, true);

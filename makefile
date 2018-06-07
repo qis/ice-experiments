@@ -11,8 +11,6 @@ CONFIG	:= -DVCPKG_TARGET_TRIPLET=${VCPKG_DEFAULT_TRIPLET}
 CONFIG	+= -DCMAKE_TOOLCHAIN_FILE=${VCPKG}/scripts/buildsystems/vcpkg.cmake
 CONFIG	+= -DCMAKE_INSTALL_PREFIX=$(PWD)
 CONFIG	+= -DBUILD_APPLICATION=ON
-CONFIG	+= -DBUILD_BENCHMARK=ON
-CONFIG	+= -DBUILD_TESTS=ON
 
 all: debug
 
@@ -38,10 +36,12 @@ release: build/llvm/release/CMakeCache.txt $(SOURCES)
 	@cmake --build build/llvm/release
 
 build/llvm/debug/CMakeCache.txt: CMakeLists.txt build/llvm/debug
-	@cd build/llvm/debug && CC=$(CC) CXX=$(CXX) cmake -GNinja -DCMAKE_BUILD_TYPE=Debug $(CONFIG) $(PWD)
+	@cd build/llvm/debug && CC=$(CC) CXX=$(CXX) cmake -GNinja \
+	  -DCMAKE_BUILD_TYPE=Debug -DBUILD_BENCHMARK=OFF -DBUILD_TESTS=ON $(CONFIG) $(PWD)
 
 build/llvm/release/CMakeCache.txt: CMakeLists.txt build/llvm/release
-	@cd build/llvm/release && CC=$(CC) CXX=$(CXX) cmake -GNinja -DCMAKE_BUILD_TYPE=Release $(CONFIG) $(PWD)
+	@cd build/llvm/release && CC=$(CC) CXX=$(CXX) cmake -GNinja \
+	  -DCMAKE_BUILD_TYPE=Release -DBUILD_BENCHMARK=ON -DBUILD_TESTS=OFF $(CONFIG) $(PWD)
 
 build/llvm/debug:
 	@mkdir -p build/llvm/debug

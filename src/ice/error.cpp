@@ -362,18 +362,30 @@ void print(FILE* out, clock::time_point tp, const char* category) noexcept
 #else
   localtime_r(&tt, &tm);
 #endif
-  const auto Y = tm.tm_year + 1900;
-  const auto M = tm.tm_mon + 1;
-  const auto D = tm.tm_mday;
+  [[maybe_unused]] const auto Y = tm.tm_year + 1900;
+  [[maybe_unused]] const auto M = tm.tm_mon + 1;
+  [[maybe_unused]] const auto D = tm.tm_mday;
   const auto h = tm.tm_hour;
   const auto m = tm.tm_min;
   const auto s = tm.tm_sec;
+#ifdef ICE_LOG_MILLISECONDS
   const auto tse = tp.time_since_epoch();
   const auto sse = std::chrono::duration_cast<std::chrono::seconds>(tse);
   const auto mse = std::chrono::duration_cast<std::chrono::milliseconds>(tse) - sse;
   const auto ms = static_cast<int>(mse.count());
-#if ICE_OS_WIN32
+#ifdef ICE_LOG_DATE
   std::fprintf(out, "%04d-%02d-%02d %02d:%02d:%02d.%03d [", Y, M, D, h, m, s, ms);
+#else
+  std::fprintf(out, "%02d:%02d:%02d.%03d [", h, m, s, ms);
+#endif
+#else
+#ifdef ICE_LOG_DATE
+  std::fprintf(out, "%04d-%02d-%02d %02d:%02d:%02d [", Y, M, D, h, m, s);
+#else
+  std::fprintf(out, "%02d:%02d:%02d [", h, m, s);
+#endif
+#endif
+#if ICE_OS_WIN32
   HANDLE handle = nullptr;
   CONSOLE_SCREEN_BUFFER_INFO info;
   WORD reset = 0;
@@ -394,14 +406,14 @@ void print(FILE* out, clock::time_point tp, const char* category) noexcept
   if (handle) {
     ::SetConsoleTextAttribute(handle, reset);
   }
-  std::fputs("] ", out);
 #else
   if (out == stderr) {
-    std::fprintf(out, "%04d-%02d-%02d %02d:%02d:%02d.%03d [\033[31m%s\033[00m] ", Y, M, D, h, m, s, ms, category);
+    std::fprintf(out, "\033[31m%s\033[00m", category);
   } else {
-    std::fprintf(out, "%04d-%02d-%02d %02d:%02d:%02d.%03d [%s] ", Y, M, D, h, m, s, ms, category);
+    std::fputs(category, out);
   }
 #endif
+  std::fputs("] ", out);
 }
 
 }  // namespace

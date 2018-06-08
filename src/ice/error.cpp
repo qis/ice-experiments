@@ -2,6 +2,7 @@
 #include <ice/config.hpp>
 #include <algorithm>
 #include <mutex>
+#include <cstdarg>
 #include <cctype>
 #include <cstdio>
 #include <ctime>

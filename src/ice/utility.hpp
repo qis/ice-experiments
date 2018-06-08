@@ -1,5 +1,6 @@
 #pragma once
 #include <ice/config.hpp>
+#include <ice/handle.hpp>
 #include <thread>
 #include <type_traits>
 #include <utility>
@@ -25,15 +26,27 @@ class thread_local_storage {
 public:
   using value_type = std::remove_cv_t<T>*;
 #if ICE_OS_WIN32
-  using handle_type = DWORD;
-  static constexpr handle_type invalid_handle_value = 0;
+  struct close_type {
+    void operator()(DWORD handle) noexcept
+    {
+      ::TlsFree(handle);
+    }
+  };
+  using handle_type = ice::handle<DWORD, 0, close_type>;
 #else
-  using handle_type = pthread_key_t;
-  static constexpr handle_type invalid_handle_value = static_cast<handle_type>(-1);
+  struct close_type {
+    void operator()(pthread_key_t handle) noexcept
+    {
+      ::pthread_key_delete(handle);
+    }
+  };
+  using handle_type = ice::handle<pthread_key_t, -1, close_type>;
 #endif
 
   class lock {
   public:
+    using handle_type = typename thread_local_storage::handle_type::view;
+
     lock(handle_type handle, value_type value) noexcept : handle_(handle)
     {
 #if ICE_OS_WIN32
@@ -45,24 +58,12 @@ public:
 #endif
     }
 
-    lock(lock&& other) : handle_(other.handle_)
-    {
-      other.handle_ = invalid_handle_value;
-    }
-
-    lock(const lock& other) = delete;
-
-    lock& operator=(lock&& other)
-    {
-      lock{ std::move(other) }.swap(*this);
-      return *this;
-    }
-
-    lock& operator=(const lock& other) = delete;
+    lock(lock&& other) noexcept = default;
+    lock& operator=(lock&& other) noexcept = default;
 
     ~lock()
     {
-      if (handle_ != invalid_handle_value) {
+      if (handle_) {
 #if ICE_OS_WIN32
         [[maybe_unused]] const auto rc = ::TlsSetValue(handle_, nullptr);
         assert(rc);
@@ -73,61 +74,19 @@ public:
       }
     }
 
-    constexpr void swap(lock& other) noexcept
-    {
-      const auto handle = other.handle_;
-      other.handle_ = handle_;
-      handle_ = handle;
-    }
-
   private:
-    handle_type handle_ = 0;
+    handle_type handle_;
   };
 
   thread_local_storage() noexcept
   {
 #if ICE_OS_WIN32
-    handle_ = ::TlsAlloc();
+    handle_.reset(::TlsAlloc());
 #else
-    [[maybe_unused]] const auto rc = ::pthread_key_create(&handle_, nullptr);
+    [[maybe_unused]] const auto rc = ::pthread_key_create(&handle_.value(), nullptr);
     assert(rc == 0);
 #endif
-    assert(handle_ != invalid_handle_value);
-  }
-
-  thread_local_storage(thread_local_storage&& other) : handle_(other.handle_)
-  {
-    other.handle_ = invalid_handle_value;
-  }
-
-  thread_local_storage(const thread_local_storage& other) = delete;
-
-  thread_local_storage& operator=(thread_local_storage&& other)
-  {
-    thread_local_storage{ std::move(other) }.swap(*this);
-    return *this;
-  }
-
-  thread_local_storage& operator=(const thread_local_storage& other) = delete;
-
-  ~thread_local_storage()
-  {
-    if (handle_ != invalid_handle_value) {
-#if ICE_OS_WIN32
-      [[maybe_unused]] const auto rc = ::TlsFree(handle_);
-      assert(rc);
-#else
-      [[maybe_unused]] const auto rc = ::pthread_key_delete(handle_);
-      assert(rc == 0);
-#endif
-    }
-  }
-
-  constexpr void swap(thread_local_storage& other) noexcept
-  {
-    const auto handle = other.handle_;
-    other.handle_ = handle_;
-    handle_ = handle;
+    assert(handle_);
   }
 
   lock set(const value_type value) noexcept
@@ -154,7 +113,7 @@ public:
   }
 
 private:
-  handle_type handle_ = invalid_handle_value;
+  handle_type handle_;
 };
 
 inline ice::error_code set_thread_affinity(std::size_t index) noexcept
@@ -195,6 +154,36 @@ inline ice::error_code set_thread_affinity(std::thread& thread, std::size_t inde
 #endif
 #endif
   return {};
+}
+
+template <typename Handler>
+class scope_exit {
+public:
+  explicit scope_exit(Handler handler) noexcept : handler_(std::move(handler)) {}
+
+  scope_exit(scope_exit&& other) noexcept :
+    handler_(std::move(other.handler_)), invoke_(std::exchange(other.invoke_, false))
+  {}
+
+  scope_exit(const scope_exit& other) = delete;
+  scope_exit& operator=(const scope_exit& other) = delete;
+
+  ~scope_exit() noexcept(ICE_NO_EXCEPTIONS || noexcept(handler_()))
+  {
+    if (invoke_) {
+      handler_();
+    }
+  }
+
+private:
+  Handler handler_;
+  bool invoke_ = true;
+};
+
+template <typename Handler>
+auto on_scope_exit(Handler&& handler) noexcept
+{
+  return ice::scope_exit<Handler>{ std::forward<Handler>(handler) };
 }
 
 }  // namespace ice

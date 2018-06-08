@@ -38,13 +38,9 @@ public:
 
     // clang-format off
   #ifdef __INTELLISENSE__
-    event(event&& other) {}
-    event(const event& other) {}
-    event& operator=(event&& other) { return *this; }
-    event& operator=(const event& other) { return *this; }
+    event& operator=(event&& other);
+    event& operator=(const event& other);
   #else
-    event(event&& other) = delete;
-    event(const event& other) = delete;
     event& operator=(event&& other) = delete;
     event& operator=(const event& other) = delete;
   #endif
@@ -140,7 +136,7 @@ public:
     return {};
   }
 
-  ice::error_code run(std::size_t event_buffer_size = 128)
+  ice::error_code run(std::size_t event_buffer_size = 128) noexcept(ICE_NO_EXCEPTIONS)
   {
 #if ICE_OS_WIN32
     using data_type = OVERLAPPED_ENTRY;

@@ -42,7 +42,7 @@ struct sync {
     }
 
     template <typename... Args>
-    void return_value(Args&&... args) noexcept
+    void return_value(Args&&... args) noexcept(ICE_NO_EXCEPTIONS || std::is_nothrow_constructible_v<T, Args...>)
     {
       state_->value.emplace(std::forward<Args>(args)...);
       state_->ready.store(true, std::memory_order_release);
@@ -63,12 +63,12 @@ struct sync {
     state* state_ = nullptr;
   };
 
-  sync(promise_type* promise) noexcept : state_(std::make_unique<state>())
+  sync(promise_type* promise) noexcept(ICE_NO_EXCEPTIONS) : state_(std::make_unique<state>())
   {
     promise->state_ = state_.get();
   }
 
-  T& get() & noexcept(!ICE_EXCEPTIONS)
+  T& get() & noexcept(ICE_NO_EXCEPTIONS)
   {
     std::unique_lock<std::mutex> lock(state_->mutex);
     state_->cv.wait(lock, [this]() { return state_->ready.load(std::memory_order_acquire); });
@@ -80,7 +80,7 @@ struct sync {
     return *state_->value;
   }
 
-  T&& get() && noexcept(!ICE_EXCEPTIONS)
+  T&& get() && noexcept(ICE_NO_EXCEPTIONS)
   {
     std::unique_lock<std::mutex> lock(state_->mutex);
     state_->cv.wait(lock, [this]() { return state_->ready.load(std::memory_order_acquire); });
@@ -143,12 +143,12 @@ struct sync<void> {
     state* state_ = nullptr;
   };
 
-  sync(promise_type* promise) noexcept : state_(std::make_unique<state>())
+  sync(promise_type* promise) noexcept(ICE_NO_EXCEPTIONS) : state_(std::make_unique<state>())
   {
     promise->state_ = state_.get();
   }
 
-  void get() noexcept(!ICE_EXCEPTIONS)
+  void get() noexcept(ICE_NO_EXCEPTIONS)
   {
     std::unique_lock<std::mutex> lock(state_->mutex);
     state_->cv.wait(lock, [this]() { return state_->ready.load(std::memory_order_acquire); });

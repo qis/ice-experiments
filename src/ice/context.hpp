@@ -16,14 +16,10 @@ public:
 
     // clang-format off
   #ifdef __INTELLISENSE__
-    event(event&& other) {}
-    event(const event& other) {}
-    event& operator=(event&& other) { return *this; }
-    event& operator=(const event& other) { return *this; }
+    event(const event& other);
+    event& operator=(const event& other);
   #else
-    event(event&& other) = delete;
     event(const event& other) = delete;
-    event& operator=(event&& other) = delete;
     event& operator=(const event& other) = delete;
   #endif
     // clang-format on
@@ -42,6 +38,11 @@ public:
     friend class context;
     std::atomic<event*> next_ = nullptr;
   };
+
+  context() = default;
+
+  context(const context& other) = delete;
+  context& operator=(const context& other) = delete;
 
   void run() noexcept
   {
@@ -79,7 +80,7 @@ public:
     cv_.notify_all();
   }
 
-  void post(event* ev) noexcept
+  void schedule(event* ev) noexcept
   {
     auto head = head_.load(std::memory_order_acquire);
     do {
@@ -108,7 +109,7 @@ public:
   void await_suspend(std::experimental::coroutine_handle<> awaiter) noexcept
   {
     awaiter_ = awaiter;
-    context_.post(this);
+    context_.schedule(this);
   }
 
   constexpr void await_resume() const noexcept {}

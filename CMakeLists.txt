@@ -109,6 +109,11 @@ if(BUILD_BENCHMARK)
   find_package(benchmark REQUIRED)
   target_link_libraries(benchmark PRIVATE benchmark::benchmark ice::ice)
   set_target_properties(benchmark PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  if(CMAKE_GENERATOR MATCHES "Visual Studio")
+    add_custom_target(RUN_BENCHMARK COMMAND $<TARGET_FILE:benchmark>
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_target_properties(RUN_BENCHMARK PROPERTIES FOLDER "build")
+  endif()
 endif()
 
 if(BUILD_TESTS)

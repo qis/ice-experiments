@@ -224,6 +224,18 @@ public:
 #endif
   }
 
+  constexpr handle_type::value_type handle() const noexcept
+  {
+    return handle_;
+  }
+
+#if ICE_OS_LINUX
+  constexpr handle_type::value_type events() const noexcept
+  {
+    return events_;
+  }
+#endif
+
 private:
   handle_type handle_;
 #if ICE_OS_LINUX

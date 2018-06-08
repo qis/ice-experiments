@@ -60,9 +60,6 @@ if(UNIX)
   target_link_libraries(ice PUBLIC Threads::Threads)
 endif()
 
-find_package(unofficial-date CONFIG REQUIRED)
-target_link_libraries(ice PRIVATE unofficial::date::date)
-
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(res/config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/ice-config.cmake

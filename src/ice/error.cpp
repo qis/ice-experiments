@@ -1,6 +1,5 @@
 #include "error.hpp"
 #include <ice/config.hpp>
-#include <date/date.h>
 #include <algorithm>
 #include <mutex>
 #include <cctype>

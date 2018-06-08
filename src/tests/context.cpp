@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <thread>
 
+// Verifies that the schedule operation is working as intended.
 TEST(context, schedule)
 {
   ice::context c0;

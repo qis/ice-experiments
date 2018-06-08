@@ -1,14 +1,24 @@
 #pragma once
-#ifdef WIN32
-#include <windows.h>
-#else
-#include <pthread.h>
-#endif
+#include <ice/error.hpp>
+#include <thread>
 #include <type_traits>
 #include <utility>
 #include <cassert>
 
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <pthread.h>
+#ifdef __FreeBSD__
+#include <pthread_np.h>
+#endif
+#endif
+
 namespace ice {
+
+#ifdef __FreeBSD__
+using cpu_set_t = cpuset_t;
+#endif
 
 template <typename T>
 class thread_local_storage {
@@ -146,5 +156,41 @@ public:
 private:
   handle_type handle_ = invalid_handle_value;
 };
+
+inline ice::error_code set_thread_affinity(std::size_t index) noexcept
+{
+  assert(index < std::thread::hardware_concurrency());
+#ifdef WIN32
+  if (!::SetThreadAffinityMask(::GetCurrentThread(), DWORD_PTR(1) << index)) {
+    return ::GetLastError();
+  }
+#else
+  cpu_set_t cpuset;
+  CPU_ZERO(&cpuset);
+  CPU_SET(static_cast<int>(index), &cpuset);
+  if (const auto ec = ::pthread_setaffinity_np(::pthread_self(), sizeof(cpuset), &cpuset)) {
+    return ec;
+  }
+#endif
+  return {};
+}
+
+inline ice::error_code set_thread_affinity(std::thread& thread, std::size_t index) noexcept
+{
+  assert(index < std::thread::hardware_concurrency());
+#ifdef WIN32
+  if (!::SetThreadAffinityMask(thread.native_handle(), DWORD_PTR(1) << index)) {
+    return ::GetLastError();
+  }
+#else
+  cpu_set_t cpuset;
+  CPU_ZERO(&cpuset);
+  CPU_SET(static_cast<int>(index), &cpuset);
+  if (const auto ec = ::pthread_setaffinity_np(thread.native_handle(), sizeof(cpuset), &cpuset)) {
+    return ec;
+  }
+#endif
+  return {};
+}
 
 }  // namespace ice

@@ -107,79 +107,48 @@ public:
     if (wsa.ec) {
       return wsa.ec;
     }
-    if (const auto handle = std::exchange(handle_, invalid_handle_value); handle != invalid_handle_value) {
-      ::CloseHandle(handle);
-    }
-    handle_ = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
-    if (handle_ == invalid_handle_value) {
+    handle_type handle(::CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0));
+    if (!handle) {
       return ::GetLastError();
     }
-#endif
-#ifdef __linux__
-    if (const auto events = std::exchange(events_, invalid_handle_value); events != invalid_handle_value) {
-      ::close(events);
-    }
-    if (const auto handle = std::exchange(handle_, invalid_handle_value); handle != invalid_handle_value) {
-      ::close(handle);
-    }
-    handle_ = ::epoll_create1(0);
-    if (handle_ == invalid_handle_value) {
+#elif ICE_OS_LINUX
+    handle_type handle(::epoll_create1(0));
+    if (!handle) {
       return errno;
     }
-    events_ = ::eventfd(0, EFD_NONBLOCK);
-    if (events_ == invalid_handle_value) {
-      ::close(std::exchange(handle_, invalid_handle_value));
+    handle_type events(::eventfd(0, EFD_NONBLOCK));
+    if (!events) {
       return errno;
     }
     epoll_event nev = { EPOLLONESHOT, {} };
-    if (::epoll_ctl(handle_, EPOLL_CTL_ADD, events_, &nev) != 0) {
-      ::close(std::exchange(handle_, invalid_handle_value));
-      ::close(std::exchange(events_, invalid_handle_value));
+    if (::epoll_ctl(handle, EPOLL_CTL_ADD, events, &nev) < 0) {
       return errno;
     }
-#endif
-#ifdef __FreeBSD__
-    if (const auto handle = std::exchange(handle_, invalid_handle_value); handle != invalid_handle_value) {
-      ::close(handle);
-    }
-    handle_ = ::kqueue();
-    if (handle_ == invalid_handle_value) {
+    events_ = std::move(events);
+#elif ICE_OS_FREEBSD
+    handle_type handle(::kqueue());
+    if (!handle) {
       return errno;
     }
-    struct kevent nev;
+    struct kevent nev = {};
     EV_SET(&nev, 0, EVFILT_USER, EV_ADD | EV_CLEAR, 0, 0, nullptr);
-    if (::kevent(handle_, &nev, 1, nullptr, 0, nullptr) != 1) {
-      ::close(std::exchange(handle_, invalid_handle_value));
+    if (::kevent(handle, &nev, 1, nullptr, 0, nullptr) < 0) {
       return errno;
     }
 #endif
+    handle_ = std::move(handle);
     return {};
   }
 
-  ~service()
-  {
-    if (handle_ != invalid_handle_value) {
-#if ICE_OS_WIN32
-      [[maybe_unused]] const auto rc = ::CloseHandle(handle_);
-      assert(rc);
-#else
-      [[maybe_unused]] const auto rc = ::close(handle_);
-      assert(rc == 0);
-#endif
-    }
-  }
-
-  ice::error_code run(std::size_t event_buffer_size = 256)
+  ice::error_code run(std::size_t event_buffer_size = 128)
   {
 #if ICE_OS_WIN32
     using data_type = OVERLAPPED_ENTRY;
     using size_type = ULONG;
-#endif
-#ifdef __linux__
+#elif ICE_OS_LINUX
     using data_type = epoll_event;
     using size_type = int;
-#endif
-#ifdef __FreeBSD__
+#elif ICE_OS_FREEBSD
     using data_type = struct kevent;
     using size_type = int;
 #endif
@@ -200,13 +169,14 @@ public:
         }
         break;
       }
-#else
-#ifdef __linux__
+#elif ICE_OS_LINUX
       const auto count = ::epoll_wait(handle_, events_data, events_size, -1);
-#endif
-#ifdef __FreeBSD__
+      if (count < 0 && errno != EINTR) {
+        ec = errno;
+        break;
+      }
+#elif ICE_OS_FREEBSD
       const auto count = ::kevent(handle_, nullptr, 0, events_data, events_size, nullptr);
-#endif
       if (count < 0 && errno != EINTR) {
         ec = errno;
         break;
@@ -220,14 +190,12 @@ public:
           ev->await_resume();
           continue;
         }
-#endif
-#ifdef __linux__
+#elif ICE_OS_LINUX
         if (const auto ev = reinterpret_cast<event*>(entry.data.ptr)) {
           ev->await_resume();
           continue;
         }
-#endif
-#ifdef __FreeBSD__
+#elif ICE_OS_FREEBSD
         if (const auto ev = reinterpret_cast<event*>(entry.udata)) {
           ev->await_resume();
           continue;
@@ -246,12 +214,10 @@ public:
   {
 #if ICE_OS_WIN32
     ::PostQueuedCompletionStatus(handle_, 0, 0, nullptr);
-#endif
-#ifdef __linux__
+#elif ICE_OS_LINUX
     epoll_event nev{ EPOLLOUT | EPOLLONESHOT, {} };
     ::epoll_ctl(handle_, EPOLL_CTL_MOD, events_, &nev);
-#endif
-#ifdef __FreeBSD__
+#elif ICE_OS_FREEBSD
     struct kevent nev {};
     EV_SET(&nev, 0, EVFILT_USER, 0, NOTE_TRIGGER, 0, nullptr);
     ::kevent(handle_, &nev, 1, nullptr, 0, nullptr);
@@ -260,7 +226,7 @@ public:
 
 private:
   handle_type handle_;
-#ifdef __linux__
+#if ICE_OS_LINUX
   handle_type events_;
 #endif
 };

@@ -2,8 +2,8 @@
 #include <ice/config.hpp>
 #include <algorithm>
 #include <mutex>
-#include <cstdarg>
 #include <cctype>
+#include <cstdarg>
 #include <cstdio>
 #include <ctime>
 
@@ -13,7 +13,7 @@
 #endif
 
 namespace ice {
-namespace detail {
+namespace {
 
 class native_category : public std::error_category {
 public:
@@ -345,9 +345,16 @@ const native_category g_native_category;
 const system_category g_system_category;
 const domain_category g_domain_category;
 
-void timestamp(FILE* handle, bool date = true, bool milliseconds = true)
+using clock = std::chrono::system_clock;
+
+std::mutex& mutex()
 {
-  const auto tp = std::chrono::system_clock::now();
+  static std::mutex mutex;
+  return mutex;
+}
+
+void print(FILE* out, clock::time_point tp, const char* category) noexcept
+{
   const auto tt = std::chrono::system_clock::to_time_t(tp);
   tm tm = {};
 #if ICE_OS_WIN32
@@ -361,112 +368,115 @@ void timestamp(FILE* handle, bool date = true, bool milliseconds = true)
   const auto h = tm.tm_hour;
   const auto m = tm.tm_min;
   const auto s = tm.tm_sec;
-  if (milliseconds) {
-    const auto tse = tp.time_since_epoch();
-    const auto sse = std::chrono::duration_cast<std::chrono::seconds>(tse);
-    const auto mse = std::chrono::duration_cast<std::chrono::milliseconds>(tse) - sse;
-    const auto ms = static_cast<int>(mse.count());
-    if (date) {
-      std::fprintf(handle, "%04d-%02d-%02d %02d:%02d:%02d.%03d", Y, M, D, h, m, s, ms);
+  const auto tse = tp.time_since_epoch();
+  const auto sse = std::chrono::duration_cast<std::chrono::seconds>(tse);
+  const auto mse = std::chrono::duration_cast<std::chrono::milliseconds>(tse) - sse;
+  const auto ms = static_cast<int>(mse.count());
+#if ICE_OS_WIN32
+  std::fprintf(out, "%04d-%02d-%02d %02d:%02d:%02d.%03d [", Y, M, D, h, m, s, ms);
+  HANDLE handle = nullptr;
+  CONSOLE_SCREEN_BUFFER_INFO info;
+  WORD reset = 0;
+  if (out == stderr) {
+    handle = ::GetStdHandle(STD_OUTPUT_HANDLE);
+    if (handle && ::GetConsoleScreenBufferInfo(handle, &info)) {
+      reset = info.wAttributes;
+      info.wAttributes &= ~(info.wAttributes & 0x0F);
+      info.wAttributes |= static_cast<WORD>(FOREGROUND_RED | FOREGROUND_INTENSITY);
+      if (!::SetConsoleTextAttribute(handle, info.wAttributes)) {
+        handle = nullptr;
+      }
     } else {
-      std::fprintf(handle, "%02d:%02d:%02d.%03d", h, m, s, ms);
-    }
-  } else {
-    if (date) {
-      std::fprintf(handle, "%04d-%02d-%02d %02d:%02d:%02d", Y, M, D, h, m, s);
-    } else {
-      std::fprintf(handle, "%02d:%02d:%02d", h, m, s);
+      handle = nullptr;
     }
   }
+  std::fputs(category, out);
+  if (handle) {
+    ::SetConsoleTextAttribute(handle, reset);
+  }
+  std::fputs("] ", out);
+#else
+  if (out == stderr) {
+    std::fprintf(out, "%04d-%02d-%02d %02d:%02d:%02d.%03d [\033[31m%s\033[00m] ", Y, M, D, h, m, s, ms, category);
+  } else {
+    std::fprintf(out, "%04d-%02d-%02d %02d:%02d:%02d.%03d [%s] ", Y, M, D, h, m, s, ms, category);
+  }
+#endif
 }
 
-std::mutex& mutex()
-{
-  static std::mutex mutex;
-  return mutex;
-}
-
-}  // namespace detail
+}  // namespace
 
 const std::error_category& native_category()
 {
-  return detail::g_native_category;
+  return g_native_category;
 }
 
 const std::error_category& system_category()
 {
-  return detail::g_system_category;
+  return g_system_category;
 }
 
 const std::error_category& domain_category()
 {
-  return detail::g_domain_category;
+  return g_domain_category;
 }
 
-void log(ice::error_code ec) noexcept
+void log(const char* format, ...) noexcept
 {
-  const std::lock_guard<std::mutex> lock{ detail::mutex() };
-  detail::timestamp(stdout);
-  std::fprintf(stdout, " [%s] %s (%d)\n", ec.category().name(), ec.message().data(), ec.value());
-}
-
-void err(ice::error_code ec) noexcept
-{
-  const std::lock_guard<std::mutex> lock{ detail::mutex() };
-  detail::timestamp(stderr);
-  std::fprintf(stderr, " [%s] %s (%d)\n", ec.category().name(), ec.message().data(), ec.value());
-}
-
-void log(ice::error_code ec, const char* message, ...) noexcept
-{
-  assert(message);
-  const std::lock_guard<std::mutex> lock{ detail::mutex() };
-  detail::timestamp(stdout);
-  std::fprintf(stdout, " [%s] ", ec.category().name());
+  std::lock_guard<std::mutex> lock(mutex());
+  print(stdout, clock::now(), "custom");
   va_list args;
-  va_start(args, message);
-  std::vfprintf(stdout, message, args);
+  va_start(args, format);
+  std::vfprintf(stdout, format, args);
+  va_end(args);
+  std::fputc('\n', stdout);
+}
+
+void err(const char* format, ...) noexcept
+{
+  std::lock_guard<std::mutex> lock(mutex());
+  print(stderr, clock::now(), "custom");
+  va_list args;
+  va_start(args, format);
+  std::vfprintf(stderr, format, args);
+  va_end(args);
+  std::fputc('\n', stderr);
+}
+
+void log(ice::error_code ec, const char* format, ...) noexcept
+{
+  std::lock_guard<std::mutex> lock(mutex());
+  print(stdout, clock::now(), ec.category().name());
+  va_list args;
+  va_start(args, format);
+  std::vfprintf(stdout, format, args);
   va_end(args);
   std::fprintf(stdout, ": %s (%d)\n", ec.message().data(), ec.value());
 }
 
-void err(ice::error_code ec, const char* message, ...) noexcept
+void err(ice::error_code ec, const char* format, ...) noexcept
 {
-  assert(message);
-  const std::lock_guard<std::mutex> lock{ detail::mutex() };
-  detail::timestamp(stderr);
-  std::fprintf(stderr, " [%s] ", ec.category().name());
+  std::lock_guard<std::mutex> lock(mutex());
+  print(stderr, clock::now(), ec.category().name());
   va_list args;
-  va_start(args, message);
-  std::vfprintf(stderr, message, args);
+  va_start(args, format);
+  std::vfprintf(stderr, format, args);
   va_end(args);
   std::fprintf(stderr, ": %s (%d)\n", ec.message().data(), ec.value());
 }
 
-void log(const char* message, ...) noexcept
+void log(ice::error_code ec) noexcept
 {
-  assert(message);
-  const std::lock_guard<std::mutex> lock{ detail::mutex() };
-  detail::timestamp(stdout);
-  std::fprintf(stdout, " [detail] ");
-  va_list args;
-  va_start(args, message);
-  std::vfprintf(stdout, message, args);
-  va_end(args);
-  std::fprintf(stdout, "\n");
+  std::lock_guard<std::mutex> lock(mutex());
+  print(stdout, clock::now(), ec.category().name());
+  std::fprintf(stdout, "%s (%d)\n", ec.message().data(), ec.value());
 }
 
-void err(const char* message, ...) noexcept
+void err(ice::error_code ec) noexcept
 {
-  assert(message);
-  const std::lock_guard<std::mutex> lock{ detail::mutex() };
-  detail::timestamp(stdout);
-  std::fprintf(stdout, " [detail] ");
-  va_list args;
-  va_start(args, message);
-  std::vfprintf(stdout, message, args);
-  va_end(args);
-  std::fprintf(stdout, "\n");
+  std::lock_guard<std::mutex> lock(mutex());
+  print(stderr, clock::now(), ec.category().name());
+  std::fprintf(stderr, "%s (%d)\n", ec.message().data(), ec.value());
 }
 
 }  // namespace ice

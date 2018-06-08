@@ -178,13 +178,13 @@ inline constexpr bool operator!=(T lhs, const ice::error_code& rhs) noexcept
   return rhs != lhs;
 }
 
+void log(const char* format, ...) noexcept;
+void err(const char* format, ...) noexcept;
+
+void log(ice::error_code ec, const char* format, ...) noexcept;
+void err(ice::error_code ec, const char* format, ...) noexcept;
+
 void log(ice::error_code ec) noexcept;
 void err(ice::error_code ec) noexcept;
-
-void log(ice::error_code ec, const char* message, ...) noexcept;
-void err(ice::error_code ec, const char* message, ...) noexcept;
-
-void log(const char* message, ...) noexcept;
-void err(const char* message, ...) noexcept;
 
 }  // namespace ice

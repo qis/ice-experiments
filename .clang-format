@@ -51,7 +51,7 @@ ContinuationIndentWidth: 2
 Cpp11BracedListStyle: false
 DerivePointerAlignment: false
 FixNamespaceComments: true
-ForEachMacros: ['for co_await']
+ForEachMacros: [ 'for co_await', 'if constexpr' ]
 IncludeCategories:
 - Regex: '^"'
   Priority: 1

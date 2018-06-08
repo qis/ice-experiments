@@ -4,6 +4,7 @@
 #include <mutex>
 #include <cctype>
 #include <cstdio>
+#include <ctime>
 
 #if ICE_OS_WIN32
 #include <wchar.h>
@@ -343,20 +344,39 @@ const native_category g_native_category;
 const system_category g_system_category;
 const domain_category g_domain_category;
 
-void timestamp(FILE* handle)
+void timestamp(FILE* handle, bool date = true, bool milliseconds = true)
 {
-  const auto st = std::chrono::floor<std::chrono::milliseconds>(std::chrono::system_clock::now());
-  const auto sd = std::chrono::floor<date::days>(st);
-  const auto ymd = date::year_month_day{ sd };
-  const auto tod = date::time_of_day<std::chrono::milliseconds>{ st - date::sys_seconds{ sd } };
-  const auto yr = static_cast<int>(ymd.year());
-  const auto mo = static_cast<unsigned>(ymd.month());
-  const auto dy = static_cast<unsigned>(ymd.day());
-  const auto hr = static_cast<int>(tod.hours().count());
-  const auto mi = static_cast<int>(tod.minutes().count());
-  const auto se = static_cast<int>(tod.seconds().count());
-  const auto ms = static_cast<int>(tod.subseconds().count());
-  std::fprintf(handle, "%04d-%02u-%02u %02d:%02d:%02d.%03d", yr, mo, dy, hr, mi, se, ms);
+  const auto tp = std::chrono::system_clock::now();
+  const auto tt = std::chrono::system_clock::to_time_t(tp);
+  tm tm = {};
+#if ICE_OS_WIN32
+  localtime_s(&tm, &tt);
+#else
+  localtime_r(&tt, &tm);
+#endif
+  const auto Y = tm.tm_year + 1900;
+  const auto M = tm.tm_mon + 1;
+  const auto D = tm.tm_mday;
+  const auto h = tm.tm_hour;
+  const auto m = tm.tm_min;
+  const auto s = tm.tm_sec;
+  if (milliseconds) {
+    const auto tse = tp.time_since_epoch();
+    const auto sse = std::chrono::duration_cast<std::chrono::seconds>(tse);
+    const auto mse = std::chrono::duration_cast<std::chrono::milliseconds>(tse) - sse;
+    const auto ms = static_cast<int>(mse.count());
+    if (date) {
+      std::fprintf(handle, "%04d-%02d-%02d %02d:%02d:%02d.%03d", Y, M, D, h, m, s, ms);
+    } else {
+      std::fprintf(handle, "%02d:%02d:%02d.%03d", h, m, s, ms);
+    }
+  } else {
+    if (date) {
+      std::fprintf(handle, "%04d-%02d-%02d %02d:%02d:%02d", Y, M, D, h, m, s);
+    } else {
+      std::fprintf(handle, "%02d:%02d:%02d", h, m, s);
+    }
+  }
 }
 
 std::mutex& mutex()

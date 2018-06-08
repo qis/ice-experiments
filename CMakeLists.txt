@@ -42,6 +42,12 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER build)
 file(GLOB_RECURSE src src/ice/*.hpp src/ice/*.cpp)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src/ice PREFIX "ice" FILES ${src})
 
+if(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc)
+  file(GLOB_RECURSE doc doc/*.md)
+  source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/doc PREFIX "doc" FILES ${doc})
+  list(APPEND src ${doc})
+endif()
+
 add_library(ice STATIC ${src})
 target_include_directories(ice PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>

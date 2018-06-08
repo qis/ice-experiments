@@ -160,6 +160,7 @@ private:
 inline ice::error_code set_thread_affinity(std::size_t index) noexcept
 {
   assert(index < std::thread::hardware_concurrency());
+#ifdef NDEBUG
 #ifdef WIN32
   if (!::SetThreadAffinityMask(::GetCurrentThread(), DWORD_PTR(1) << index)) {
     return ::GetLastError();
@@ -168,9 +169,10 @@ inline ice::error_code set_thread_affinity(std::size_t index) noexcept
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
   CPU_SET(static_cast<int>(index), &cpuset);
-  if (const auto ec = ::pthread_setaffinity_np(::pthread_self(), sizeof(cpuset), &cpuset)) {
-    return ec;
+  if (const auto rc = ::pthread_setaffinity_np(::pthread_self(), sizeof(cpuset), &cpuset)) {
+    return rc;
   }
+#endif
 #endif
   return {};
 }
@@ -178,6 +180,7 @@ inline ice::error_code set_thread_affinity(std::size_t index) noexcept
 inline ice::error_code set_thread_affinity(std::thread& thread, std::size_t index) noexcept
 {
   assert(index < std::thread::hardware_concurrency());
+#ifdef NDEBUG
 #ifdef WIN32
   if (!::SetThreadAffinityMask(thread.native_handle(), DWORD_PTR(1) << index)) {
     return ::GetLastError();
@@ -186,9 +189,10 @@ inline ice::error_code set_thread_affinity(std::thread& thread, std::size_t inde
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
   CPU_SET(static_cast<int>(index), &cpuset);
-  if (const auto ec = ::pthread_setaffinity_np(thread.native_handle(), sizeof(cpuset), &cpuset)) {
-    return ec;
+  if (const auto rc = ::pthread_setaffinity_np(thread.native_handle(), sizeof(cpuset), &cpuset)) {
+    return rc;
   }
+#endif
 #endif
   return {};
 }

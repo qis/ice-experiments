@@ -8,41 +8,41 @@
 
 namespace ice {
 
-class event {
-public:
-  event() noexcept = default;
-
-  // clang-format off
-#ifdef __INTELLISENSE__
-  event(event&& other) {}
-  event(const event& other) {}
-  event& operator=(event&& other) { return *this; }
-  event& operator=(const event& other) { return *this; }
-#else
-  event(event&& other) = delete;
-  event(const event& other) = delete;
-  event& operator=(event&& other) = delete;
-  event& operator=(const event& other) = delete;
-#endif
-  // clang-format on
-
-  virtual ~event() = default;
-
-  void resume() noexcept
-  {
-    awaiter_.resume();
-  }
-
-protected:
-  std::experimental::coroutine_handle<> awaiter_;
-
-private:
-  friend class context;
-  std::atomic<event*> next_ = nullptr;
-};
-
 class context {
 public:
+  class event {
+  public:
+    event() noexcept = default;
+
+    // clang-format off
+  #ifdef __INTELLISENSE__
+    event(event&& other) {}
+    event(const event& other) {}
+    event& operator=(event&& other) { return *this; }
+    event& operator=(const event& other) { return *this; }
+  #else
+    event(event&& other) = delete;
+    event(const event& other) = delete;
+    event& operator=(event&& other) = delete;
+    event& operator=(const event& other) = delete;
+  #endif
+    // clang-format on
+
+    virtual ~event() = default;
+
+    void resume() noexcept
+    {
+      awaiter_.resume();
+    }
+
+  protected:
+    std::experimental::coroutine_handle<> awaiter_;
+
+  private:
+    friend class context;
+    std::atomic<event*> next_ = nullptr;
+  };
+
   void run() noexcept
   {
     const auto index = index_.set(this);
@@ -96,7 +96,7 @@ private:
   std::mutex mutex_;
 };
 
-class schedule final : public event {
+class schedule final : public ice::context::event {
 public:
   schedule(context& context, bool post = false) noexcept : context_(context), ready_(!post && context.is_current()) {}
 

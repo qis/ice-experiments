@@ -1,9 +1,9 @@
 #pragma once
+#include <ice/config.hpp>
 #include <ice/utility.hpp>
 #include <atomic>
 #include <condition_variable>
 #include <experimental/coroutine>
-#include <memory>
 #include <mutex>
 
 namespace ice {

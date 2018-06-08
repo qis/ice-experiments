@@ -1,22 +1,22 @@
 #pragma once
-#include <ice/error.hpp>
+#include <ice/config.hpp>
 #include <thread>
 #include <type_traits>
 #include <utility>
 #include <cassert>
 
-#ifdef WIN32
+#if ICE_OS_WIN32
 #include <windows.h>
 #else
 #include <pthread.h>
-#ifdef __FreeBSD__
+#if ICE_OS_FREEBSD
 #include <pthread_np.h>
 #endif
 #endif
 
 namespace ice {
 
-#ifdef __FreeBSD__
+#if ICE_OS_FREEBSD
 using cpu_set_t = cpuset_t;
 #endif
 
@@ -24,7 +24,7 @@ template <typename T>
 class thread_local_storage {
 public:
   using value_type = std::remove_cv_t<T>*;
-#ifdef WIN32
+#if ICE_OS_WIN32
   using handle_type = DWORD;
   static constexpr handle_type invalid_handle_value = 0;
 #else
@@ -36,7 +36,7 @@ public:
   public:
     lock(handle_type handle, value_type value) noexcept : handle_(handle)
     {
-#ifdef WIN32
+#if ICE_OS_WIN32
       [[maybe_unused]] const auto rc = ::TlsSetValue(handle_, value);
       assert(rc);
 #else
@@ -63,7 +63,7 @@ public:
     ~lock()
     {
       if (handle_ != invalid_handle_value) {
-#ifdef WIN32
+#if ICE_OS_WIN32
         [[maybe_unused]] const auto rc = ::TlsSetValue(handle_, nullptr);
         assert(rc);
 #else
@@ -86,7 +86,7 @@ public:
 
   thread_local_storage() noexcept
   {
-#ifdef WIN32
+#if ICE_OS_WIN32
     handle_ = ::TlsAlloc();
 #else
     [[maybe_unused]] const auto rc = ::pthread_key_create(&handle_, nullptr);
@@ -113,7 +113,7 @@ public:
   ~thread_local_storage()
   {
     if (handle_ != invalid_handle_value) {
-#ifdef WIN32
+#if ICE_OS_WIN32
       [[maybe_unused]] const auto rc = ::TlsFree(handle_);
       assert(rc);
 #else
@@ -137,7 +137,7 @@ public:
 
   value_type get() noexcept
   {
-#ifdef WIN32
+#if ICE_OS_WIN32
     return reinterpret_cast<value_type>(::TlsGetValue(handle_));
 #else
     return reinterpret_cast<value_type>(::pthread_getspecific(handle_));
@@ -146,7 +146,7 @@ public:
 
   const value_type get() const noexcept
   {
-#ifdef WIN32
+#if ICE_OS_WIN32
     return reinterpret_cast<const value_type>(::TlsGetValue(handle_));
 #else
     return reinterpret_cast<const value_type>(::pthread_getspecific(handle_));
@@ -160,8 +160,8 @@ private:
 inline ice::error_code set_thread_affinity(std::size_t index) noexcept
 {
   assert(index < std::thread::hardware_concurrency());
-#ifdef NDEBUG
-#ifdef WIN32
+#if ICE_NO_DEBUG
+#if ICE_OS_WIN32
   if (!::SetThreadAffinityMask(::GetCurrentThread(), DWORD_PTR(1) << index)) {
     return ::GetLastError();
   }
@@ -180,8 +180,8 @@ inline ice::error_code set_thread_affinity(std::size_t index) noexcept
 inline ice::error_code set_thread_affinity(std::thread& thread, std::size_t index) noexcept
 {
   assert(index < std::thread::hardware_concurrency());
-#ifdef NDEBUG
-#ifdef WIN32
+#if ICE_NO_DEBUG
+#if ICE_OS_WIN32
   if (!::SetThreadAffinityMask(thread.native_handle(), DWORD_PTR(1) << index)) {
     return ::GetLastError();
   }

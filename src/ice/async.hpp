@@ -1,19 +1,12 @@
 #pragma once
+#include <ice/config.hpp>
 #include <atomic>
 #include <condition_variable>
 #include <experimental/coroutine>
 #include <mutex>
 #include <optional>
 
-#ifndef ICE_ASYNC_EXCEPTIONS
-#if (defined(_MSC_VER) && _HAS_EXCEPTIONS) || !defined(_MSC_VER) && __cpp_exceptions
-#define ICE_ASYNC_EXCEPTIONS 1
-#else
-#define ICE_ASYNC_EXCEPTIONS 0
-#endif
-#endif
-
-#if ICE_ASYNC_EXCEPTIONS
+#if ICE_EXCEPTIONS
 #include <ice/error.hpp>
 #include <exception>
 #endif
@@ -27,7 +20,7 @@ struct sync {
     std::atomic_bool ready = false;
     std::condition_variable cv;
     std::mutex mutex;
-#if ICE_ASYNC_EXCEPTIONS
+#if ICE_EXCEPTIONS
     std::exception_ptr exception;
 #endif
   };
@@ -56,10 +49,10 @@ struct sync {
       state_->cv.notify_one();
     }
 
-#if ICE_ASYNC_EXCEPTIONS || defined(__clang__)
+#if ICE_EXCEPTIONS || defined(__clang__)
     void unhandled_exception() noexcept
     {
-#if ICE_ASYNC_EXCEPTIONS
+#if ICE_EXCEPTIONS
       state_->exception = std::current_exception();
       state_->ready.store(true, std::memory_order_release);
       state_->cv.notify_one();
@@ -75,11 +68,11 @@ struct sync {
     promise->state_ = state_.get();
   }
 
-  T& get() & noexcept(!ICE_ASYNC_EXCEPTIONS)
+  T& get() & noexcept(!ICE_EXCEPTIONS)
   {
     std::unique_lock<std::mutex> lock(state_->mutex);
     state_->cv.wait(lock, [this]() { return state_->ready.load(std::memory_order_acquire); });
-#if ICE_ASYNC_EXCEPTIONS
+#if ICE_EXCEPTIONS
     if (state_->exception) {
       std::rethrow_exception(state_->exception);
     }
@@ -87,11 +80,11 @@ struct sync {
     return *state_->value;
   }
 
-  T&& get() && noexcept(!ICE_ASYNC_EXCEPTIONS)
+  T&& get() && noexcept(!ICE_EXCEPTIONS)
   {
     std::unique_lock<std::mutex> lock(state_->mutex);
     state_->cv.wait(lock, [this]() { return state_->ready.load(std::memory_order_acquire); });
-#if ICE_ASYNC_EXCEPTIONS
+#if ICE_EXCEPTIONS
     if (state_->exception) {
       std::rethrow_exception(state_->exception);
     }
@@ -109,7 +102,7 @@ struct sync<void> {
     std::atomic_bool ready = false;
     std::condition_variable cv;
     std::mutex mutex;
-#if ICE_ASYNC_EXCEPTIONS
+#if ICE_EXCEPTIONS
     std::exception_ptr exception;
 #endif
   };
@@ -136,10 +129,10 @@ struct sync<void> {
       state_->cv.notify_one();
     }
 
-#if ICE_ASYNC_EXCEPTIONS || defined(__clang__)
+#if ICE_EXCEPTIONS || defined(__clang__)
     void unhandled_exception() noexcept
     {
-#if ICE_ASYNC_EXCEPTIONS
+#if ICE_EXCEPTIONS
       state_->exception = std::current_exception();
       state_->ready.store(true, std::memory_order_release);
       state_->cv.notify_one();
@@ -155,11 +148,11 @@ struct sync<void> {
     promise->state_ = state_.get();
   }
 
-  void get() noexcept(!ICE_ASYNC_EXCEPTIONS)
+  void get() noexcept(!ICE_EXCEPTIONS)
   {
     std::unique_lock<std::mutex> lock(state_->mutex);
     state_->cv.wait(lock, [this]() { return state_->ready.load(std::memory_order_acquire); });
-#if ICE_ASYNC_EXCEPTIONS
+#if ICE_EXCEPTIONS
     if (state_->exception) {
       std::rethrow_exception(state_->exception);
     }
@@ -189,10 +182,10 @@ struct task {
 
     constexpr void return_void() const noexcept {}
 
-#if ICE_ASYNC_EXCEPTIONS || defined(__clang__)
+#if ICE_EXCEPTIONS || defined(__clang__)
     void unhandled_exception() const noexcept
     {
-#if ICE_ASYNC_EXCEPTIONS
+#if ICE_EXCEPTIONS
       try {
         throw;
       }

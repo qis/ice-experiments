@@ -1,11 +1,12 @@
 #include "error.hpp"
+#include <ice/config.hpp>
 #include <date/date.h>
 #include <algorithm>
 #include <mutex>
 #include <cctype>
 #include <cstdio>
 
-#ifdef WIN32
+#if ICE_OS_WIN32
 #include <wchar.h>
 #include <windows.h>
 #endif
@@ -22,23 +23,14 @@ public:
 
   std::string message(int code) const override
   {
-#ifdef WIN32
+#if ICE_OS_WIN32
     std::wstring wstr;
     constexpr DWORD type = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
     constexpr DWORD lang = MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL);  // MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
     const auto id = static_cast<DWORD>(code);
     LPWSTR buffer = nullptr;
     if (const auto size = FormatMessageW(type, nullptr, id, lang, reinterpret_cast<LPWSTR>(&buffer), 0, nullptr)) {
-#if _HAS_EXCEPTIONS
-      try {
-#endif
-        wstr.assign(buffer, wcsnlen_s(buffer, static_cast<size_t>(size)));
-#if _HAS_EXCEPTIONS
-      }
-      catch (...) {
-        wstr.clear();
-      }
-#endif
+      wstr.assign(buffer, wcsnlen_s(buffer, static_cast<size_t>(size)));
       LocalFree(reinterpret_cast<HLOCAL>(buffer));
     }
     if (!wstr.empty()) {

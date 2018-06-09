@@ -4,7 +4,6 @@ CC	!= which clang-devel || which clang
 CXX	!= which clang++-devel || which clang++
 FORMAT	!= which clang-format-devel || which clang-format
 SYSDBG	!= which lldb-devel || which lldb || which gdb
-PROJECT	!= grep "^project" CMakeLists.txt | cut -c9- | cut -d " " -f1 | tr "[:upper:]" "[:lower:]"
 SOURCES	!= find src -type f -name '*.hpp' -or -name '*.cpp'
 
 CONFIG	:= -DVCPKG_TARGET_TRIPLET=${VCPKG_DEFAULT_TRIPLET}
@@ -15,10 +14,10 @@ CONFIG	+= -DBUILD_APPLICATION=ON
 all: debug
 
 run: build/llvm/debug/CMakeCache.txt
-	@cmake --build build/llvm/debug --target main && build/llvm/debug/$(PROJECT)
+	@cmake --build build/llvm/debug --target main && build/llvm/debug/main
 
 dbg: build/llvm/debug/CMakeCache.txt
-	@cmake --build build/llvm/debug --target main && $(SYSDBG) build/llvm/debug/$(PROJECT)
+	@cmake --build build/llvm/debug --target main && $(SYSDBG) build/llvm/debug/main
 
 test: build/llvm/debug/CMakeCache.txt
 	@cmake --build build/llvm/debug --target tests && cd build/llvm/debug && ctest

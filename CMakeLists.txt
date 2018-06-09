@@ -95,12 +95,11 @@ if(BUILD_APPLICATION)
   configure_file(res/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/config.h)
   target_include_directories(main PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/src)
   target_link_libraries(main ice::ice)
-  #set_target_properties(main PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
   set_target_properties(main PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT main)
   install(TARGETS main RUNTIME DESTINATION bin CONFIGURATIONS Release RelWithDebInfo MinSizeRel)
   if(WIN32)
-    install(DIRECTORY $<TARGET_FILE_DIR:${PROJECT_NAME}>/ DESTINATION bin
+    install(DIRECTORY $<TARGET_FILE_DIR:main>/ DESTINATION bin
       CONFIGURATIONS Release RelWithDebInfo MinSizeRel
       FILES_MATCHING PATTERN "*.dll")
   endif()

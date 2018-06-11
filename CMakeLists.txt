@@ -49,7 +49,7 @@ if(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc)
 endif()
 
 add_library(ice STATIC ${src})
-target_compile_definitions(ice PRIVATE ICE_LOG_DATE=1 ICE_LOG_MILLISECONDS=1)
+target_compile_definitions(ice PUBLIC FMT_EXCEPTIONS=0 FMT_USE_NOEXCEPT=1)
 target_include_directories(ice PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   $<INSTALL_INTERFACE:include>)
@@ -66,6 +66,9 @@ if(UNIX)
   find_package(Threads REQUIRED)
   target_link_libraries(ice PUBLIC Threads::Threads)
 endif()
+
+find_package(fmt 5.0.0 CONFIG REQUIRED)
+target_link_libraries(ice PUBLIC fmt::fmt-header-only)
 
 include(CMakePackageConfigHelpers)
 

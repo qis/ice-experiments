@@ -1,11 +1,14 @@
 #include "error.hpp"
 #include <ice/config.hpp>
 #include <algorithm>
-#include <mutex>
 #include <cctype>
-#include <cstdarg>
 #include <cstdio>
+
+#if 0
+#include <cstdarg>
+#include <mutex>
 #include <ctime>
+#endif
 
 #if ICE_OS_WIN32
 #include <wchar.h>
@@ -345,6 +348,8 @@ const native_category g_native_category;
 const system_category g_system_category;
 const domain_category g_domain_category;
 
+#if 0
+
 using clock = std::chrono::system_clock;
 
 std::mutex& mutex()
@@ -416,6 +421,8 @@ void print(FILE* out, clock::time_point tp, const char* category) noexcept
   std::fputs("] ", out);
 }
 
+#endif
+
 }  // namespace
 
 const std::error_category& native_category()
@@ -432,6 +439,8 @@ const std::error_category& domain_category()
 {
   return g_domain_category;
 }
+
+#if 0
 
 void log(const char* format, ...) noexcept
 {
@@ -490,5 +499,7 @@ void err(ice::error_code ec) noexcept
   print(stderr, clock::now(), ec.category().name());
   std::fprintf(stderr, "%s (%d)\n", ec.message().data(), ec.value());
 }
+
+#endif
 
 }  // namespace ice

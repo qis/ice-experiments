@@ -1,5 +1,5 @@
-#include <ice/async.hpp>
-#include <ice/context.hpp>
+#include <ice/error.hpp>
+#include <ice/log.hpp>
 
 int main(int argc, char* argv[])
 {

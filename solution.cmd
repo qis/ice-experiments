@@ -9,7 +9,7 @@ set build=%~dp0\build\msvc
 md %build% 2>nul
 pushd %build%
 
-"C:\Program Files\CMake\bin\cmake.exe" -G "Visual Studio 15 2017 Win64" ^
+"C:\Program Files\CMake\bin\cmake.exe" -G "Visual Studio 15 2017 Win64" --no-warn-unused-cli ^
   -DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET% ^
   -DCMAKE_TOOLCHAIN_FILE=%VCPKG%\scripts\buildsystems\vcpkg.cmake ^
   -DCMAKE_CONFIGURATION_TYPES="Debug;Release" ^
